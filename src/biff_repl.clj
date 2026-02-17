@@ -7,6 +7,7 @@
             [biff_repl.ui :as ui]
             [biff_repl.worker :as worker]
             [biff_repl.schema :as schema]
+            [biff_repl.repl :as repl]
             [clojure.test :as test]
             [clojure.tools.logging :as log]
             [clojure.tools.namespace.repl :as tn-repl]
@@ -19,6 +20,7 @@
   [app/module
    (biff/authentication-module {})
    home/module
+   repl/module
    schema/module
    worker/module])
 
