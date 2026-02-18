@@ -42,4 +42,4 @@ jobs:
         continue-on-error: true
 
       - name: Test
-        run: clj -M:dev test
+        run: clojure -M:dev test
