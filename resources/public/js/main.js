@@ -2,13 +2,13 @@
 
 // CodeMirror 6 integration for the REPL
 (function() {
-  // Only run on pages with the editor container
-  if (!document.getElementById('editor-container')) {
-    return;
-  }
-
   // Load CodeMirror modules dynamically from ESM CDN
   async function loadCodeMirror() {
+    // Only run on pages with the editor container
+    const container = document.getElementById('editor-container');
+    if (!container) {
+      return;
+    }
     const [
       { EditorView, basicSetup },
       { EditorState },
@@ -23,7 +23,6 @@
       import('https://esm.sh/@codemirror/theme-one-dark@6.1.2')
     ]);
 
-    const container = document.getElementById('editor-container');
     const textarea = document.getElementById('code-input');
     const form = container.closest('form');
     const placeholder = container.dataset.placeholder || '(+ 1 2 3)';
