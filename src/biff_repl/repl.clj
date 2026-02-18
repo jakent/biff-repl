@@ -119,10 +119,12 @@
              :hx-headers (cheshire/generate-string
                           {:x-csrf-token csrf/*anti-forgery-token*})}
       [:div.bg-gray-800.rounded-lg.overflow-hidden
-       [:div#editor-container.border-b.border-gray-700
-        {:data-placeholder "(+ 1 2 3)"}]
-       [:textarea#code-input.hidden {:name "code"}]
-       [:div.flex.justify-between.items-center.p-2.bg-gray-750
+       [:div#editor-container.border-b.border-gray-700]
+       [:textarea#code-input.w-full.h-24.p-3.bg-gray-800.text-green-300.font-mono.border-none.resize-none.focus:outline-none
+        {:name "code"
+         :placeholder "(+ 1 2 3)"
+         :autofocus true}]
+       [:div.flex.justify-between.items-center.p-2.border-t.border-gray-700
         [:div.text-gray-500.text-sm
          [:span.mr-4 "Ctrl+Enter to evaluate"]
          [:span "30 evals/min"]]
