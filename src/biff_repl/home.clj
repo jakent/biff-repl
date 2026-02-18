@@ -162,9 +162,13 @@
             {:type "submit"})
      "Send another code"])))
 
+(defn redirect-to-repl [_req]
+  {:status 302
+   :headers {"Location" "/repl"}})
+
 (def module
-  {:routes [["" {:middleware [mid/wrap-redirect-signed-in]}
-             ["/"                  {:get home-page}]]
+  {:routes [["/"                   {:get redirect-to-repl}]
+            ["/signup"             {:get home-page}]
             ["/link-sent"          {:get link-sent}]
             ["/verify-link"        {:get verify-email-page}]
             ["/signin"             {:get signin-page}]

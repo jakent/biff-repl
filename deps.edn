@@ -2,6 +2,7 @@
  :deps {com.biffweb/biff           {:git/url "https://github.com/jacobobryant/biff", :git/sha "fef3b44", :git/tag "v1.9.1"}
         org.clojure/clojure        {:mvn/version "1.12.2"}
         cheshire/cheshire          {:mvn/version "6.1.0"}
+        org.babashka/sci           {:mvn/version "0.8.42"}
 
         ;; Notes on logging: https://gist.github.com/jacobobryant/76b7a08a07d5ef2cc076b048d078f1f3
         org.slf4j/slf4j-simple     {:mvn/version "2.0.0-alpha5"}
