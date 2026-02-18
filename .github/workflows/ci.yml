@@ -3,8 +3,6 @@ name: CI
 on:
   pull_request:
     branches: [main]
-  push:
-    branches: [main]
 
 jobs:
   test:
@@ -23,13 +21,16 @@ jobs:
         with:
           cli: latest
 
-      - name: Cache deps
+      - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
             ~/.m2/repository
             ~/.gitlibs
+            ~/.cpcache
           key: ${{ runner.os }}-clj-${{ hashFiles('deps.edn') }}
+          restore-keys: |
+            ${{ runner.os }}-clj-
 
       - name: Install clj-kondo
         run: |

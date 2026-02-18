@@ -83,3 +83,36 @@ When implementing REPL commands:
 - Include tests for new functionality
 - Update `(help)` output if adding new REPL commands
 - Run `clj -M:dev format` and `clj -M:dev lint` before committing
+
+## Deployment
+
+### Infrastructure
+- Hosted on a single DigitalOcean droplet running Docker
+- Caddy reverse proxy handles TLS and routing (managed by separate `infra` repo)
+- Docker images built and pushed to GitHub Container Registry (GHCR)
+- Auto-deploys on merge to `main` via GitHub Actions
+
+### Docker Build
+- Multi-stage: `clojure:temurin-21-tools-deps-alpine` builder → `eclipse-temurin:21-jre-alpine` runtime
+- Builder runs `clj -M:dev uberjar` to produce a standalone JAR
+- Runtime image is ~200MB with only JRE + app jar
+- App runs as non-root `app` user
+- XTDB data persisted via Docker volume at `/app/data`
+
+### Critical Requirements
+- Jetty MUST bind to `0.0.0.0:8080` (not `127.0.0.1`) for Docker networking
+- Main namespace MUST have `(:gen-class)` for uberjar compilation
+- Never commit secrets — environment config comes from `config.env` on the droplet
+
+### Local Docker Testing
+```bash
+docker build -t biff-site .
+docker run -p 8080:8080 biff-site
+# Visit http://localhost:8080
+```
+
+### Deploy Flow
+1. Push to `main` (or merge a PR)
+2. GitHub Actions: runs tests → builds Docker image → pushes to GHCR
+3. GitHub Actions: SSHs to droplet → pulls new image → restarts service
+4. Caddy routes traffic to new container automatically
