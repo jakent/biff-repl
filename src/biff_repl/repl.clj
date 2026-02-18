@@ -113,22 +113,28 @@
        [:div.text-gray-500 ";; Press Ctrl+Enter or click Eval to run code."]]]
 
      ;; Input area
-     [:form {:hx-post "/repl/eval"
-             :hx-target "#repl-output"
-             :hx-swap "beforeend scroll:#repl-output:bottom"
-             :hx-headers (cheshire/generate-string
-                          {:x-csrf-token csrf/*anti-forgery-token*})}
-      [:div.bg-gray-800.rounded-lg.overflow-hidden
-       [:div#editor-container.border-b.border-gray-700]
-       [:textarea#code-input.w-full.h-24.p-3.bg-gray-800.text-green-300.font-mono.border-none.resize-none.focus:outline-none
+     [:form#repl-form {:hx-post "/repl/eval"
+                       :hx-target "#repl-output"
+                       :hx-swap "beforeend scroll:#repl-output:bottom"
+                       :hx-headers (cheshire/generate-string
+                                    {:x-csrf-token csrf/*anti-forgery-token*})}
+      [:div.bg-gray-800.rounded-lg.overflow-hidden.border.border-gray-700
+       [:div#editor-container]
+       [:textarea#code-input.w-full.h-28.p-4.bg-gray-800.text-green-300.font-mono.text-sm.border-none.resize-none.focus:outline-none.focus:ring-2.focus:ring-green-500.focus:ring-inset
         {:name "code"
          :placeholder "(+ 1 2 3)"
-         :autofocus true}]
-       [:div.flex.justify-between.items-center.p-2.border-t.border-gray-700
+         :autofocus true
+         :spellcheck "false"
+         :autocomplete "off"
+         :autocorrect "off"
+         :autocapitalize "off"}]
+       [:div.flex.justify-between.items-center.px-4.py-3.bg-gray-900.border-t.border-gray-700
         [:div.text-gray-500.text-sm
-         [:span.mr-4 "Ctrl+Enter to evaluate"]
-         [:span "30 evals/min"]]
-        [:button.bg-green-600.hover:bg-green-500.text-white.px-4.py-2.rounded.font-medium.transition-colors
+         [:kbd.bg-gray-700.px-2.py-1.rounded.text-xs.mr-1 "Ctrl"]
+         [:span.text-gray-600 "+"]
+         [:kbd.bg-gray-700.px-2.py-1.rounded.text-xs.mx-1 "Enter"]
+         [:span.ml-2 "to evaluate"]]
+        [:button.bg-green-600.hover:bg-green-500.text-white.px-6.py-2.rounded-md.font-medium.transition-colors.shadow-sm
          {:type "submit"}
          "Eval"]]]]
 
