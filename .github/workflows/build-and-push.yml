@@ -1,4 +1,4 @@
-name: Build & Deploy
+name: Build & Push
 
 on:
   push:
@@ -71,19 +71,20 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  deploy:
+  notify-infra:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Trigger deploy in infra repo
+        uses: peter-evans/repository-dispatch@v3
         with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          script: |
-            cd /opt/apps
-            docker pull ghcr.io/${{ github.repository }}:latest
-            docker compose up -d --no-deps --force-recreate biff-site
-            docker image prune -f
-            echo "Deployed at $(date)"
+          token: ${{ secrets.INFRA_DISPATCH_TOKEN }}
+          repository: jakent/infra
+          event-type: deploy
+          client-payload: |
+            {
+              "service": "biff-site",
+              "image": "ghcr.io/${{ github.repository }}:latest",
+              "sha": "${{ github.sha }}",
+              "repo": "${{ github.repository }}"
+            }

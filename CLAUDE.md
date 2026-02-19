@@ -84,13 +84,13 @@ When implementing REPL commands:
 - Update `(help)` output if adding new REPL commands
 - Run `clj -M:dev format` and `clj -M:dev lint` before committing
 
-## Deployment
+## Build & Deployment
 
-### Infrastructure
-- Hosted on a single DigitalOcean droplet running Docker
-- Caddy reverse proxy handles TLS and routing (managed by separate `infra` repo)
-- Docker images built and pushed to GitHub Container Registry (GHCR)
-- Auto-deploys on merge to `main` via GitHub Actions
+### Build Pipeline
+- Merging to `main` triggers GitHub Actions
+- Actions runs tests, builds a Docker image, and pushes to GHCR
+- After push, a `repository_dispatch` event notifies the `infra` repo
+- The infra repo handles the actual deploy to the droplet
 
 ### Docker Build
 - Multi-stage: `clojure:temurin-21-tools-deps-alpine` builder → `eclipse-temurin:21-jre-alpine` runtime
@@ -102,7 +102,7 @@ When implementing REPL commands:
 ### Critical Requirements
 - Jetty MUST bind to `0.0.0.0:8080` (not `127.0.0.1`) for Docker networking
 - Main namespace MUST have `(:gen-class)` for uberjar compilation
-- Never commit secrets — environment config comes from `config.env` on the droplet
+- Never commit secrets — environment config lives on the server, managed by the infra repo
 
 ### Local Docker Testing
 ```bash
@@ -111,8 +111,7 @@ docker run -p 8080:8080 biff-site
 # Visit http://localhost:8080
 ```
 
-### Deploy Flow
-1. Push to `main` (or merge a PR)
-2. GitHub Actions: runs tests → builds Docker image → pushes to GHCR
-3. GitHub Actions: SSHs to droplet → pulls new image → restarts service
-4. Caddy routes traffic to new container automatically
+### Important Separation
+This repo does NOT know about the droplet, SSH keys, or deploy targets.
+Deployment is handled entirely by the `infra` repo.
+If you need to change how or where the app is deployed, that's an infra repo concern.
