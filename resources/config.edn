@@ -7,12 +7,6 @@
                                :default "localhost"}]
  :biff/port     #long #or [#biff/env "PORT" 8080]
 
- :biff.xtdb/dir          "storage/xtdb"
- :biff.xtdb/topology     #keyword #or [#profile {:prod #biff/env "PROD_XTDB_TOPOLOGY"
-                                                 :default #biff/env "XTDB_TOPOLOGY"}
-                                       "standalone"]
- :biff.xtdb.jdbc/jdbcUrl #biff/secret "XTDB_JDBC_URL"
-
  :biff.beholder/enabled         #profile {:dev true :default false}
  :biff.beholder/paths           ["src" "resources" "test"]
  :biff.add-libs/aliases         #profile {:dev [:dev] :prod [:prod]}
@@ -21,13 +15,6 @@
  :biff.middleware/cookie-secret #biff/secret COOKIE_SECRET
  :biff/jwt-secret               #biff/secret JWT_SECRET
  :biff.refresh/enabled          #profile {:dev true :default false}
-
- :mailersend/api-key  #biff/secret MAILERSEND_API_KEY
- :mailersend/from     #biff/env MAILERSEND_FROM
- :mailersend/reply-to #biff/env MAILERSEND_REPLY_TO
-
- :recaptcha/secret-key #biff/secret RECAPTCHA_SECRET_KEY
- :recaptcha/site-key   #biff/env RECAPTCHA_SITE_KEY
 
  :biff.nrepl/port #or [#biff/env NREPL_PORT "7888"]
  :biff.nrepl/args ["--port" #ref [:biff.nrepl/port]
@@ -44,22 +31,7 @@
  :biff.tasks/deploy-untracked-files [#ref [:biff.tasks/css-output]
                                      "config.env"]
 
- ;; `clj -M:dev prod-dev` will run the soft-deploy task whenever files in these directories are changed.
- :biff.tasks/watch-dirs             ["src" "dev" "resources" "test"]
-
- ;; The version of the Taliwind standalone bin to install. See `clj -M:dev css -h`. If you change
- ;; this, run `rm bin/tailwindcss; clj -M:dev install-tailwind`.
- :biff.tasks/tailwind-version       "v3.4.17"
-
- ;; :rsync is the default if rsync is on the path; otherwise :git is the default. Set this to :git
- ;; if you have rsync on the path but still want to deploy with git.
- ;; :biff.tasks/deploy-with :rsync
-
- ;; Uncomment this line if you're deploying with git and your local branch is called main instead of
- ;; master:
- ;; :biff.tasks/git-deploy-cmd ["git" "push" "prod" "main:master"]
+ :biff.tasks/watch-dirs  ["src" "dev" "resources" "test"]
+ :biff.tasks/tailwind-version "v3.4.17"
  :biff.tasks/git-deploy-cmd ["git" "push" "prod" "master"]
-
- ;; Uncomment this line if you have any ssh-related problems:
- ;; :biff.tasks/skip-ssh-agent true
  }
