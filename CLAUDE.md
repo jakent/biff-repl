@@ -83,3 +83,35 @@ When implementing REPL commands:
 - Include tests for new functionality
 - Update `(help)` output if adding new REPL commands
 - Run `clj -M:dev format` and `clj -M:dev lint` before committing
+
+## Build & Deployment
+
+### Build Pipeline
+- Merging to `main` triggers GitHub Actions
+- Actions runs tests, builds a Docker image, and pushes to GHCR
+- After push, a `repository_dispatch` event notifies the `infra` repo
+- The infra repo handles the actual deploy to the droplet
+
+### Docker Build
+- Multi-stage: `clojure:temurin-21-tools-deps-alpine` builder → `eclipse-temurin:21-jre-alpine` runtime
+- Builder runs `clj -M:dev uberjar` to produce a standalone JAR
+- Runtime image is ~200MB with only JRE + app jar
+- App runs as non-root `app` user
+- XTDB data persisted via Docker volume at `/app/data`
+
+### Critical Requirements
+- Jetty MUST bind to `0.0.0.0:8080` (not `127.0.0.1`) for Docker networking
+- Main namespace MUST have `(:gen-class)` for uberjar compilation
+- Never commit secrets — environment config lives on the server, managed by the infra repo
+
+### Local Docker Testing
+```bash
+docker build -t biff-site .
+docker run -p 8080:8080 biff-site
+# Visit http://localhost:8080
+```
+
+### Important Separation
+This repo does NOT know about the droplet, SSH keys, or deploy targets.
+Deployment is handled entirely by the `infra` repo.
+If you need to change how or where the app is deployed, that's an infra repo concern.
