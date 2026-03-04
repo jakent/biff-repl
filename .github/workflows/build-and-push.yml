@@ -79,11 +79,11 @@ jobs:
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.INFRA_DISPATCH_TOKEN }}
-          repository: jakent/infra
+          repository: jakent/droplet-infra
           event-type: deploy
           client-payload: |
             {
-              "service": "biff-site",
+              "service": "biff-repl",
               "image": "ghcr.io/${{ github.repository }}:latest",
               "sha": "${{ github.sha }}",
               "repo": "${{ github.repository }}"
