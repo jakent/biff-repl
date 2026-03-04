@@ -1,28 +1,18 @@
 (ns biff_repl
   (:require [com.biffweb :as biff]
-            [biff_repl.email :as email]
-            [biff_repl.app :as app]
             [biff_repl.home :as home]
             [biff_repl.middleware :as mid]
             [biff_repl.ui :as ui]
-            [biff_repl.worker :as worker]
-            [biff_repl.schema :as schema]
             [biff_repl.repl :as repl]
             [clojure.test :as test]
             [clojure.tools.logging :as log]
             [clojure.tools.namespace.repl :as tn-repl]
-            [malli.core :as malc]
-            [malli.registry :as malr]
             [nrepl.cmdline :as nrepl-cmd])
   (:gen-class))
 
 (def modules
-  [app/module
-   (biff/authentication-module {})
-   home/module
-   repl/module
-   schema/module
-   worker/module])
+  [home/module
+   repl/module])
 
 (def routes [["" {:middleware [mid/wrap-site-defaults]}
               (keep :routes modules)]
@@ -45,31 +35,18 @@
   (generate-assets! ctx)
   (test/run-all-tests #"biff_repl.*-test"))
 
-(def malli-opts
-  {:registry (malr/composite-registry
-              malc/default-registry
-              (apply biff/safe-merge (keep :schema modules)))})
-
 (def initial-system
   {:biff/modules #'modules
-   :biff/send-email #'email/send-email
    :biff/handler #'handler
-   :biff/malli-opts #'malli-opts
    :biff.beholder/on-save #'on-save
-   :biff.middleware/on-error #'ui/on-error
-   :biff.xtdb/tx-fns biff/tx-fns
-   :biff_repl/chat-clients (atom #{})})
+   :biff.middleware/on-error #'ui/on-error})
 
 (defonce system (atom {}))
 
 (def components
   [biff/use-aero-config
-   biff/use-xtdb
-   biff/use-queues
-   biff/use-xtdb-tx-listener
    biff/use-htmx-refresh
    biff/use-jetty
-   biff/use-chime
    biff/use-beholder])
 
 (defn start []
