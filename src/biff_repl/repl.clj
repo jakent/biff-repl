@@ -164,7 +164,7 @@
 
      ;; Unified terminal container — natural top-to-bottom flow
      [:div#repl-container.bg-gray-800.rounded-lg.p-4.font-mono.text-sm.overflow-y-auto
-      {:style {:min-height "70vh" :max-height "85vh"}}
+      {:style {:height "75vh"}}
 
       ;; History (normal flow, not flex)
       [:div#repl-history
