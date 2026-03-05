@@ -11,8 +11,9 @@
   "Runs all tests"
   []
   (require 'biff_repl-test
-           'biff_repl.sandbox-test)
-  (let [result (t/run-tests 'biff_repl-test 'biff_repl.sandbox-test)]
+           'biff_repl.sandbox-test
+           'biff_repl.repl-test)
+  (let [result (t/run-tests 'biff_repl-test 'biff_repl.sandbox-test 'biff_repl.repl-test)]
     (when (or (pos? (:fail result)) (pos? (:error result)))
       (System/exit 1))))
 
