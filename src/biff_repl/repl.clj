@@ -42,6 +42,55 @@
            (fn [timestamps]
              (conj (cleanup-old-timestamps (or timestamps []) now) now)))))
 
+;; Paren balance checking
+(defn- balanced?
+  "Returns true if all parens, brackets, and braces are balanced in s.
+   Tracks string context so delimiters inside strings are ignored."
+  [s]
+  (loop [i 0
+         depth {:paren 0 :bracket 0 :brace 0}
+         in-string false
+         escape false]
+    (if (>= i (count s))
+      (and (not in-string)
+           (zero? (:paren depth))
+           (zero? (:bracket depth))
+           (zero? (:brace depth)))
+      (let [ch (.charAt s i)]
+        (cond
+          escape
+          (recur (inc i) depth in-string false)
+
+          (= ch \\)
+          (recur (inc i) depth in-string true)
+
+          (= ch \")
+          (recur (inc i) depth (not in-string) false)
+
+          in-string
+          (recur (inc i) depth in-string false)
+
+          (= ch \()
+          (recur (inc i) (update depth :paren inc) false false)
+
+          (= ch \))
+          (recur (inc i) (update depth :paren dec) false false)
+
+          (= ch \[)
+          (recur (inc i) (update depth :bracket inc) false false)
+
+          (= ch \])
+          (recur (inc i) (update depth :bracket dec) false false)
+
+          (= ch \{)
+          (recur (inc i) (update depth :brace inc) false false)
+
+          (= ch \})
+          (recur (inc i) (update depth :brace dec) false false)
+
+          :else
+          (recur (inc i) depth false false))))))
+
 ;; SCI context (created once, shared across requests)
 (defonce sci-ctx (sandbox/create-context commands/commands-ns))
 
@@ -49,15 +98,17 @@
   "Renders the evaluation result as HTML."
   [{:keys [result error]} code]
   (if error
-    [:div.result-entry
-     [:div.code-input.text-gray-400.text-sm.mb-1
-      [:span.text-blue-400 "> "] code]
-     [:div.error.text-red-400.font-mono.whitespace-pre-wrap
+    [:div.mb-1
+     [:div.flex.items-start
+      [:span.text-yellow-500.mr-2 "=>"]
+      [:span.text-gray-300.whitespace-pre-wrap code]]
+     [:div.text-red-400.whitespace-pre-wrap
       error]]
-    [:div.result-entry
-     [:div.code-input.text-gray-400.text-sm.mb-1
-      [:span.text-blue-400 "> "] code]
-     [:div.result.text-green-300.font-mono.whitespace-pre-wrap
+    [:div.mb-1
+     [:div.flex.items-start
+      [:span.text-yellow-500.mr-2 "=>"]
+      [:span.text-gray-300.whitespace-pre-wrap code]]
+     [:div.text-green-300.whitespace-pre-wrap
       (sandbox/format-result result)]]))
 
 (defn eval-handler
@@ -71,14 +122,20 @@
        :headers {"Content-Type" "text/html"}
        :body ""}
 
+      (not (balanced? code))
+      {:status 200
+       :headers {"Content-Type" "text/html"
+                 "HX-Trigger" "unbalanced"}
+       :body ""}
+
       (not (check-rate-limit session-id))
       {:status 429
        :headers {"Content-Type" "text/html"}
        :body (rum/render-static-markup
-              [:div.result-entry
-               [:div.code-input.text-gray-400.text-sm.mb-1
-                [:span.text-blue-400 "> "] code]
-               [:div.error.text-red-400.font-mono
+              [:div.mb-1
+               [:div.whitespace-pre-wrap
+                [:span.text-yellow-500 "=> "] [:span.text-gray-300 code]]
+               [:div.text-red-400.whitespace-pre-wrap.pl-6
                 "Rate limit exceeded. Please wait before trying again."]])}
 
       :else
@@ -90,7 +147,7 @@
            :body (rum/render-static-markup (result-html eval-result code))})))))
 
 (defn repl-page
-  "Renders the main REPL page with CodeMirror editor."
+  "Renders the main REPL page as a unified terminal."
   [req]
   (ui/base
    (assoc req :base/title "Clojure REPL")
@@ -98,48 +155,44 @@
     [:div.max-w-4xl.mx-auto.p-4
 
      ;; Header
-     [:div.mb-6
+     [:div.mb-4
       [:h1.text-3xl.font-bold.text-green-400 "Clojure REPL"]
-      [:p.text-gray-400.mt-2
+      [:p.text-gray-400.mt-1
        "Interactive sandboxed Clojure environment. Try "
        [:code.text-yellow-300 "(help)"]
        " to get started."]]
 
-     ;; Output area
-     [:div#repl-output.bg-gray-800.rounded-lg.p-4.mb-4.min-h-64.max-h-96.overflow-y-auto.font-mono.text-sm
-      [:div.result-entry
-       [:div.text-gray-500 ";; Welcome to the Clojure REPL!"]
-       [:div.text-gray-500 ";; Type (help) for available commands."]
-       [:div.text-gray-500 ";; Press Ctrl+Enter or click Eval to run code."]]]
+     ;; Unified terminal container — natural top-to-bottom flow
+     [:div#repl-container.bg-gray-800.rounded-lg.p-4.font-mono.text-sm.overflow-y-auto
+      {:style {:height "75vh"}}
 
-     ;; Input area
-     [:form#repl-form {:hx-post "/repl/eval"
-                       :hx-target "#repl-output"
-                       :hx-swap "beforeend scroll:#repl-output:bottom"
-                       :hx-headers (cheshire/generate-string
-                                    {:x-csrf-token csrf/*anti-forgery-token*})}
-      [:div.bg-gray-800.rounded-lg.overflow-hidden.border.border-gray-700
-       [:div#editor-container]
-       [:textarea#code-input.w-full.h-28.p-4.bg-gray-800.text-green-300.font-mono.text-sm.border-none.resize-none.focus:outline-none.focus:ring-2.focus:ring-green-500.focus:ring-inset
-        {:name "code"
-         :placeholder "(+ 1 2 3)"
-         :autofocus true
-         :spellcheck "false"
-         :autocomplete "off"
-         :autocorrect "off"
-         :autocapitalize "off"}]
-       [:div.flex.justify-between.items-center.px-4.py-3.bg-gray-900.border-t.border-gray-700
-        [:div.text-gray-500.text-sm
-         [:kbd.bg-gray-700.px-2.py-1.rounded.text-xs.mr-1 "Ctrl"]
-         [:span.text-gray-600 "+"]
-         [:kbd.bg-gray-700.px-2.py-1.rounded.text-xs.mx-1 "Enter"]
-         [:span.ml-2 "to evaluate"]]
-        [:button.bg-green-600.hover:bg-green-500.text-white.px-6.py-2.rounded-md.font-medium.transition-colors.shadow-sm
-         {:type "submit"}
-         "Eval"]]]]
+      ;; History (normal flow, not flex)
+      [:div#repl-history
+       [:div.text-gray-500.mb-1 ";; Welcome to the Clojure REPL!"]
+       [:div.text-gray-500.mb-2 ";; Type (help) for available commands."]]
+
+      ;; Inline prompt + input (sits right after history)
+      [:form#repl-form
+       {:hx-post "/repl/eval"
+        :hx-target "#repl-history"
+        :hx-swap "beforeend"
+        :hx-headers (cheshire/generate-string
+                     {:x-csrf-token csrf/*anti-forgery-token*})}
+       [:div.flex.items-start
+        [:span.text-yellow-500.mr-2.leading-6.select-none "=>"]
+        [:textarea#repl-input.flex-1.bg-transparent.text-green-300.resize-none.leading-6.p-0.m-0.border-0
+         {:name "code"
+          :rows "1"
+          :placeholder "(+ 1 2 3)"
+          :autofocus true
+          :spellcheck "false"
+          :autocomplete "off"
+          :autocorrect "off"
+          :autocapitalize "off"
+          :style {:outline "none" :box-shadow "none"}}]]]]
 
      ;; Footer
-     [:div.mt-6.text-center.text-gray-500.text-sm
+     [:div.mt-4.text-center.text-gray-500.text-sm
       [:p "Powered by "
        [:a.text-blue-400.hover:underline
         {:href "https://github.com/babashka/sci" :target "_blank"}
