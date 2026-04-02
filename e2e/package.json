@@ -1,0 +1,17 @@
+{
+  "name": "biff-repl-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "test": "cypress run"
+  },
+  "devDependencies": {
+    "@badeball/cypress-cucumber-preprocessor": "^24.0.0",
+    "@bahmutov/cypress-esbuild-preprocessor": "^2.2.3",
+    "cypress": "^13.17.0",
+    "esbuild": "^0.24.2",
+    "typescript": "^5.7.0"
+  }
+}

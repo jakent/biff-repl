@@ -9,3 +9,4 @@ test/
 *.md
 !deps.edn
 docker-compose*.yml
+e2e/

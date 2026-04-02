@@ -44,3 +44,55 @@ jobs:
 
       - name: Test
         run: clojure -M:dev test
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t biff-site .
+
+      - name: Start app container
+        run: docker run -d --name biff-app -p 8080:8080 biff-site
+
+      - name: Wait for app to be ready
+        run: |
+          echo "Waiting for app on http://localhost:8080/repl ..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/repl > /dev/null; then
+              echo "App is ready after ${i}x2s"
+              break
+            fi
+            echo "  attempt $i/30..."
+            sleep 2
+          done
+          curl -sf http://localhost:8080/repl || (echo "App never became ready" && exit 1)
+
+      - name: Run Cypress E2E tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: e2e
+          browser: chrome
+          headed: false
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: e2e/cypress/screenshots/
+          if-no-files-found: ignore
+
+      - name: Upload videos on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: e2e/cypress/videos/
+          if-no-files-found: ignore
+
+      - name: Stop container
+        if: always()
+        run: docker stop biff-app && docker rm biff-app
